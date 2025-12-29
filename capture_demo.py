@@ -57,8 +57,8 @@ if __name__ == '__main__':
     observation = env.reset()
     done = False
     
-    # Run for one episode
-    for i in range(300): # Horizon
+    # Run for one episode (Trimmed to 4.5 seconds = 90 frames @ 20fps)
+    for i in range(90): # Shortened Horizon
         # Pure policy (validation=True)
         action = agent.choose_action(observation, validation=True)
         next_observation, reward, done, info = env.step(action)
