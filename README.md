@@ -74,8 +74,15 @@ This loads the trained weights and renders the simulation on-screen.
 
 ## Results
 
+### Performance Graph
 The agent successfully converges after approximately 8,000 episodes, achieving a stable high score of ~275.
-*(Include screenshots or GIFs of the robot opening the door here)*
+
+![Training Graph](assets/training_graph.png)
+
+### Video Demo
+The trained agent performing the door opening task:
+
+![Demo](assets/demo.gif)
 
 ## References
 *   [TD3 Paper: Addressing Function Approximation Error in Actor-Critic Methods](https://arxiv.org/abs/1802.09477)
