@@ -86,9 +86,54 @@ python main.py
 
 ## 🧠 Model Architecture (TD3)
 
-The solution uses an **Actor-Critic** architecture:
+The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabilization:
 
-*   **Actor:** Maps states to continuous actions.
+```mermaid
+graph TD
+    subgraph Environment [Robosuite / MuJoCo]
+        State[State / Observation]
+        Reward[Reward]
+        Done[Done Flag]
+    end
+
+    subgraph Agent [TD3 Agent]
+        ReplayBuffer[(Replay Buffer)]
+        
+        subgraph Neural_Networks [Neural Networks]
+            Actor(Actor Network)
+            Critic1(Critic 1)
+            Critic2(Critic 2)
+        end
+        
+        subgraph Targets [Target Networks (Polyak Avg)]
+            TargetActor(Target Actor)
+            TargetCritic1(Target Critic 1)
+            TargetCritic2(Target Critic 2)
+        end
+    end
+
+    %% Interaction Flow
+    State -->|Input| Actor
+    Actor -->|Action + Noise| State
+    State -->|Store Transition| ReplayBuffer
+    Reward -->|Store Transition| ReplayBuffer
+    
+    %% Training Flow
+    ReplayBuffer -->|Sample Batch| Critic1
+    ReplayBuffer -->|Sample Batch| Critic2
+    ReplayBuffer -->|Sample Batch| Actor
+    
+    %% Network Updates
+    Action_Out[Action] --> Critic1
+    Action_Out --> Critic2
+    
+    %% Sync
+    Actor -.->|Soft Update| TargetActor
+    Critic1 -.->|Soft Update| TargetCritic1
+    Critic2 -.->|Soft Update| TargetCritic2
+```
+
+*   **Actor:** Maps states to continuous actions (Joint Velocities).
 *   **Critic (x2):** Estimates the Q-value of state-action pairs (Twin Critics to reduce bias).
 *   **Target Networks:** Normalized using Polyak averaging for stability.
 
