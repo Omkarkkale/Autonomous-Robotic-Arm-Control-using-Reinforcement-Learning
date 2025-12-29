@@ -138,7 +138,7 @@ graph TD
     State & Action & Reward -->|Store Transition| Buffer
 
     %% 3. Training Flow
-    Buffer -->|Random Batch (256)| Batch
+    Buffer -->|Random Batch 256| Batch
     
     %% Critic Update (Twin Delayed)
     Batch --> Critic1 & Critic2
