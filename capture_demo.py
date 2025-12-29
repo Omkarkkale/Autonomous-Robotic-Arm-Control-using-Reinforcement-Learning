@@ -77,7 +77,7 @@ if __name__ == '__main__':
             break
 
     # Write frames twice to repeat the action
-    video_writer = imageio.get_writer('assets/demo.gif', fps=20)
+    video_writer = imageio.get_writer('assets/demo.gif', fps=20, loop=0)
     for _ in range(2):
         for frame in frames:
             video_writer.append_data(frame)
