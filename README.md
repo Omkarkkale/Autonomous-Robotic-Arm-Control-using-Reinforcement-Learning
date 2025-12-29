@@ -90,35 +90,72 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    %% NODES
-    Env[Robosuite Simulation]
-    Buffer[(Replay Buffer)]
-
-    subgraph TD3_Agent [TD3 Agent Architecture]
+    %% 1. INTERACTION LOOP (The "What Happened" Phase)
+    subgraph Environment_Interaction [ 🌍 Interaction Phase ]
         direction TB
-        Actor[Actor Network - Policy]
-        Critic[Twin Critics - Value]
-        Target[Target Networks]
+        Env[Robosuite Environment]
+        State[State Vector]
+        Action[Action + Noise]
+        Reward[Reward Signal]
     end
 
-    %% FLOWS
-    
-    %% Interaction
-    Env -->|State| Actor
-    Actor -->|Action| Env
-    Env -->|Experience Tuple| Buffer
+    %% 2. MEMORY (The "Remember" Phase)
+    subgraph Memory_System [ 🧠 Memory Phase ]
+        Buffer[(Replay Buffer<br>Capacity: 1,000,000)]
+    end
 
-    %% Training
-    Buffer -->|Sample Batch| Critic
-    Buffer -->|Sample Batch| Actor
+    %% 3. LEARNING (The "Improve" Phase)
+    subgraph Learning_System [ 🎓 Training Phase (TD3) ]
+        direction TB
+        
+        %% Critic Section
+        subgraph Critic_Setup [Value Estimation]
+            Batch(Sample Mini-Batch)
+            Critic1[Critic 1 Network]
+            Critic2[Critic 2 Network]
+            TargetC[Target Critics]
+            LossC(Minimize MSE Loss)
+        end
+        
+        %% Actor Section
+        subgraph Actor_Setup [Policy Optimization]
+            Actor[Actor Network]
+            TargetA[Target Actor]
+            LossA(Maximize Q-Value)
+        end
+    end
 
-    %% Optimization
-    Actor -->|Deterministic Action| Critic
-    Critic -->|Q-Value Output| Actor
+    %% --- CONNECTIONS & FLOW ---
+
+    %% 1. Interaction Flow
+    Env -->|Generates| State
+    State -->|Input to| Actor
+    Actor -->|Add Exploration Noise| Action
+    Action -->|Execute| Env
+    Env -->|Feedback| Reward
+
+    %% 2. Storage Flow
+    State & Action & Reward -->|Store Transition| Buffer
+
+    %% 3. Training Flow
+    Buffer -->|Random Batch (256)| Batch
     
-    %% Stability
-    Actor -.->|Polyak Averaging| Target
-    Critic -.->|Polyak Averaging| Target
+    %% Critic Update (Twin Delayed)
+    Batch --> Critic1 & Critic2
+    Batch --> TargetC & TargetA
+    TargetA -->|Next Action| TargetC
+    TargetC -->|Target Q-Value| LossC
+    LossC -->|Backpropagate| Critic1 & Critic2
+
+    %% Actor Update (Delayed)
+    Batch --> Actor
+    Actor -->|Proposed Action| Critic1
+    Critic1 -->|Policy Gradient| LossA
+    LossA -->|Backpropagate| Actor
+
+    %% Stability (Polyak Averaging)
+    Actor -.->|Soft Update| TargetA
+    Critic1 & Critic2 -.->|Soft Update| TargetC
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
