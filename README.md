@@ -154,7 +154,7 @@ graph TD
     
     %% Actor Updates (Delayed)
     Critic1 -->|Q-Value Estimate| PolicyGrad
-    PolicyGrad -->|Backprop (Delayed)| Actor
+    PolicyGrad -->|Backprop Delayed| Actor
     
     %% Target Networks
     Actor & Critic1 & Critic2 -.->|Weight Transfer| SoftUpdate
