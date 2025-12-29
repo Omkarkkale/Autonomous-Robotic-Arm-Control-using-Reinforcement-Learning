@@ -90,59 +90,74 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    %% Style Definitions (Soft Colors)
-    classDef state fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,rx:10,ry:10;
-    classDef action fill:#ffebee,stroke:#c62828,stroke-width:2px,rx:10,ry:10;
-    classDef reward fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:10,ry:10;
-    classDef memory fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,shape:cylinder;
-    classDef network fill:#fff8e1,stroke:#fbc02d,stroke-width:2px,rx:5,ry:5;
+    %% Visual Styling
+    classDef storage fill:#DAE8FC,stroke:#6C8EBF,stroke-width:2px;
+    classDef process fill:#D5E8D4,stroke:#82B366,stroke-width:2px;
+    classDef model   fill:#FFE6CC,stroke:#D79B00,stroke-width:2px;
+    classDef param   fill:#F5F5F5,stroke:#666666,stroke-width:1px,stroke-dasharray: 5 5;
 
-    %% --- 1. INTERACTION PHASE ---
-    subgraph INTERACTION [" 🌍 Robot-Environment Loop "]
-        direction LR
-        State["📷 Observation"]:::state
-        Action["🦾 Action"]:::action
-        Env("🏗️ Simulation<br>(Robosuite)"):::reward
-        
-        State -->|Input| Action
-        Action -->|Execute| Env
-        Env -->|Feedback| State
+    %% --- ENVIRONMENT ---
+    subgraph ENV_LAYER [" 💻 Simulation Layer (Robosuite) "]
+        direction TB
+        Obs(State Vector):::param
+        Reward(Reward Signal):::param
+        Done(Termination Flag):::param
+        Physics[MuJoCo Physics Engine]:::process
     end
 
-    %% --- 2. STORAGE PHASE ---
-    subgraph MEMORY [" 🧠 Experience Replay "]
-        Buffer[("🗄️ Replay Buffer<br>(1M Samples)")]:::memory
+    %% --- MEMORY ---
+    subgraph DATA_LAYER [" 🗄️ Data Layer "]
+        ReplayBuffer[("Experience Replay<br>(Capacity: 1M Transitions)")]:::storage
     end
 
-    %% --- 3. TRAINING PHASE ---
-    subgraph LEARNING [" 🎓 Optimization (TD3) "]
+    %% --- AGENT ---
+    subgraph AGENT_LAYER [" 🤖 TD3 Agent Architecture "]
         direction TB
         
-        subgraph CRITIC_UPDATE [" ⚖️ Critic Training "]
-            Batch1(Sample Batch):::network
-            Critic["📉 Twin Critics<br>(Minimize Error)"]:::network
+        subgraph ACTOR_BLOCK [" Policy (Actor) "]
+            Actor(Actor Network):::model
+            Action[Continuous Action]:::process
+            Noise(Exploration Noise):::param
+        end
+
+        subgraph CRITIC_BLOCK [" Value Estimation (Twin Critics) "]
+            Critic1(Critic 1):::model
+            Critic2(Critic 2):::model
+            MinQ[Min Q-Value]:::process
         end
         
-        subgraph ACTOR_UPDATE [" 🎭 Actor Training "]
-            Actor["📈 Actor Network<br>(Maximize Reward)"]:::network
+        subgraph UPDATE_BLOCK [" Optimization Logic "]
+            Bellman[Minimize Bellman Error]:::process
+            PolicyGrad[Deterministic Policy Gradient]:::process
+            SoftUpdate[Polyak Averaging]:::process
         end
     end
 
     %% --- CONNECTIONS ---
     
-    %% Storage
-    Env -.->|"(s, a, r, s')"| Buffer
+    %% Interaction Information Flow
+    Physics --> Obs & Reward & Done
+    Obs --> Actor
+    Actor --> Action
+    Noise --> Action
+    Action -->|Execute Control| Physics
     
-    %% Learning Data Flow
-    Buffer ==>|Random Batch| Batch1
-    Batch1 --> Critic
-    Batch1 --> Actor
+    %% Data Storage Flow
+    Obs & Action & Reward & Done -->|Store Tuple| ReplayBuffer
     
-    %% Gradients
-    Actor -->|Policy| Critic
+    %% Training Data Flow
+    ReplayBuffer ==>|Sample Batch (B=256)| Bellman
     
-    %% Target Networks (Implicit)
-    Critic -.->|Polyak Avg| Target[Target Networks]:::network
+    %% Critic Updates
+    Bellman -->|Backprop| Critic1 & Critic2
+    Actor -.->|Next Action| Bellman
+    
+    %% Actor Updates (Delayed)
+    Critic1 -->|Q-Value Estimate| PolicyGrad
+    PolicyGrad -->|Backprop (Delayed)| Actor
+    
+    %% Target Networks
+    Actor & Critic1 & Critic2 -.->|Weight Transfer| SoftUpdate
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
