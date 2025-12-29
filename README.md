@@ -146,7 +146,7 @@ graph TD
     Obs & Action & Reward & Done -->|Store Tuple| ReplayBuffer
     
     %% Training Data Flow
-    ReplayBuffer ==>|Sample Batch (B=256)| Bellman
+    ReplayBuffer -->|Sample Batch 256| Bellman
     
     %% Critic Updates
     Bellman -->|Backprop| Critic1 & Critic2
