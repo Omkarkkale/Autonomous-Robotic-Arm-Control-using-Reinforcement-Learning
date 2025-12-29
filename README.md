@@ -97,7 +97,7 @@ graph TD
     classDef param   fill:#F5F5F5,stroke:#666666,stroke-width:1px,stroke-dasharray: 5 5;
 
     %% --- ENVIRONMENT ---
-    subgraph ENV_LAYER [" 💻 Simulation Layer (Robosuite) "]
+    subgraph ENV_LAYER [Simulation Layer - Robosuite]
         direction TB
         Obs(State Vector):::param
         Reward(Reward Signal):::param
@@ -106,27 +106,27 @@ graph TD
     end
 
     %% --- MEMORY ---
-    subgraph DATA_LAYER [" 🗄️ Data Layer "]
-        ReplayBuffer[("Experience Replay<br>(Capacity: 1M Transitions)")]:::storage
+    subgraph DATA_LAYER [Data Layer]
+        ReplayBuffer[("Experience Replay<br>Capacity 1M Transitions")]:::storage
     end
 
     %% --- AGENT ---
-    subgraph AGENT_LAYER [" 🤖 TD3 Agent Architecture "]
+    subgraph AGENT_LAYER [TD3 Agent Architecture]
         direction TB
         
-        subgraph ACTOR_BLOCK [" Policy (Actor) "]
+        subgraph ACTOR_BLOCK [Policy - Actor]
             Actor(Actor Network):::model
             Action[Continuous Action]:::process
             Noise(Exploration Noise):::param
         end
 
-        subgraph CRITIC_BLOCK [" Value Estimation (Twin Critics) "]
+        subgraph CRITIC_BLOCK [Value Estimation - Twin Critics]
             Critic1(Critic 1):::model
             Critic2(Critic 2):::model
             MinQ[Min Q-Value]:::process
         end
         
-        subgraph UPDATE_BLOCK [" Optimization Logic "]
+        subgraph UPDATE_BLOCK [Optimization Logic]
             Bellman[Minimize Bellman Error]:::process
             PolicyGrad[Deterministic Policy Gradient]:::process
             SoftUpdate[Polyak Averaging]:::process
