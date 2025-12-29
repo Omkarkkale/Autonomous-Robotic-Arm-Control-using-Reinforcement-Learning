@@ -52,37 +52,35 @@ if __name__ == '__main__':
     agent.load_models()
 
     print("Capturing video...")
-    video_writer = imageio.get_writer('assets/demo.gif', fps=20)
-
+    frames = []
+    
     observation = env.reset()
     done = False
     
-    # Run for one episode (Trimmed to 4.5 seconds = 90 frames @ 20fps)
-    for i in range(90): # Shortened Horizon
+    # Run for one episode (Trimmed to 3 seconds = 60 frames @ 20fps)
+    for i in range(60): 
         # Pure policy (validation=True)
         action = agent.choose_action(observation, validation=True)
         next_observation, reward, done, info = env.step(action)
         
-        # Capture frame
-        # In robosuite, env.sim.render(...) is lower level. 
-        # But since we enabled camera obs, we might be able to grab it from `env.sim`.
-        # Alternatively, suite environments have a render function.
-        # Let's try grabbing the specific camera frame.
-        
-        # Robosuite standard way to get image array:
         frame = env.sim.render(
             camera_name="frontview", 
             width=512, 
             height=512, 
             depth=False
         )
-        # Flip vertically because mujoco renders upside-down usually
         frame = np.flipud(frame)
-        video_writer.append_data(frame)
+        frames.append(frame)
 
         observation = next_observation
         if done:
             break
+
+    # Write frames twice to repeat the action
+    video_writer = imageio.get_writer('assets/demo.gif', fps=20)
+    for _ in range(2):
+        for frame in frames:
+            video_writer.append_data(frame)
 
     video_writer.close()
     print("Video saved to assets/demo.gif")
