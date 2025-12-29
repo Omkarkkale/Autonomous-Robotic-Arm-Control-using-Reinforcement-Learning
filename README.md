@@ -90,63 +90,59 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    %% Define Styles
-    classDef storage fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef process fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef network fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef environment fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    %% Style Definitions (Soft Colors)
+    classDef state fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,rx:10,ry:10;
+    classDef action fill:#ffebee,stroke:#c62828,stroke-width:2px,rx:10,ry:10;
+    classDef reward fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:10,ry:10;
+    classDef memory fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,shape:cylinder;
+    classDef network fill:#fff8e1,stroke:#fbc02d,stroke-width:2px,rx:5,ry:5;
 
-    subgraph Simulation [Environment Loop]
-        direction TB
-        Env((Robosuite<br>Environment)):::environment
-        State[Observation]:::process
-        Reward(Reward):::process
-        Done{Done?}:::process
-    end
-
-    subgraph Training [TD3 Learning Process]
-        direction TB
-        Buffer[("Replay Buffer<br>(1,000,000 capacity)")]:::storage
+    %% --- 1. INTERACTION PHASE ---
+    subgraph INTERACTION [" 🌍 Robot-Environment Loop "]
+        direction LR
+        State["📷 Observation"]:::state
+        Action["🦾 Action"]:::action
+        Env("🏗️ Simulation<br>(Robosuite)"):::reward
         
-        subgraph Critics [Critic Update]
-            Batch(Sample Mini-Batch):::process
-            Critic1[Critic 1 Network]:::network
-            Critic2[Critic 2 Network]:::network
-            TargetC1[Target Critic 1]:::network
-            TargetC2[Target Critic 2]:::network
-            LossC(Minimize  MSE Loss):::process
-        end
+        State -->|Input| Action
+        Action -->|Execute| Env
+        Env -->|Feedback| State
+    end
 
-        subgraph Actors [Delayed Actor Update]
-            Actor[Actor Network]:::network
-            TargetActor[Target Actor]:::network
-            LossA(Maximize Q-Value):::process
+    %% --- 2. STORAGE PHASE ---
+    subgraph MEMORY [" 🧠 Experience Replay "]
+        Buffer[("🗄️ Replay Buffer<br>(1M Samples)")]:::memory
+    end
+
+    %% --- 3. TRAINING PHASE ---
+    subgraph LEARNING [" 🎓 Optimization (TD3) "]
+        direction TB
+        
+        subgraph CRITIC_UPDATE [" ⚖️ Critic Training "]
+            Batch1(Sample Batch):::network
+            Critic["📉 Twin Critics<br>(Minimize Error)"]:::network
+        end
+        
+        subgraph ACTOR_UPDATE [" 🎭 Actor Training "]
+            Actor["📈 Actor Network<br>(Maximize Reward)"]:::network
         end
     end
 
-    %% Data Flow
-    Env -->|State| Actor
-    Actor -->|Action + Noise| Env
-    Env -->|Next State, Reward, Done| Buffer
+    %% --- CONNECTIONS ---
     
-    %% Critic Training Flow
-    Buffer -->|Batch| Batch
-    Batch --> Critic1 & Critic2
-    Batch --> TargetC1 & TargetC2 & TargetActor
-    TargetActor -->|Target Action| TargetC1 & TargetC2
-    TargetC1 & TargetC2 -->|Min Q-Value| LossC
-    LossC -->|Backprop| Critic1 & Critic2
-
-    %% Actor Training Flow
-    Batch --> Actor
-    Actor -->|Predicted Action| Critic1
-    Critic1 -->|Q-Value| LossA
-    LossA -->|Backprop| Actor
+    %% Storage
+    Env -.->|"(s, a, r, s')"| Buffer
     
-    %% Target Updates
-    Actor -.->|Polyak Avg| TargetActor
-    Critic1 -.->|Polyak Avg| TargetC1
-    Critic2 -.->|Polyak Avg| TargetC2
+    %% Learning Data Flow
+    Buffer ==>|Random Batch| Batch1
+    Batch1 --> Critic
+    Batch1 --> Actor
+    
+    %% Gradients
+    Actor -->|Policy| Critic
+    
+    %% Target Networks (Implicit)
+    Critic -.->|Polyak Avg| Target[Target Networks]:::network
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
