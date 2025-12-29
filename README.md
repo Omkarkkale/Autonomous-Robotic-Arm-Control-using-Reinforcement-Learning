@@ -117,7 +117,7 @@ graph TD
             LossC(Minimize  MSE Loss):::process
         end
 
-        subgraph Actors [Actor Update (Delayed)]
+        subgraph Actors [Delayed Actor Update]
             Actor[Actor Network]:::network
             TargetActor[Target Actor]:::network
             LossA(Maximize Q-Value):::process
