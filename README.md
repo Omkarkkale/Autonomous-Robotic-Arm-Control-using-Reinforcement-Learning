@@ -91,7 +91,7 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 ```mermaid
 graph TD
     %% 1. INTERACTION LOOP (The "What Happened" Phase)
-    subgraph Environment_Interaction [ 🌍 Interaction Phase ]
+    subgraph Environment_Interaction [Interaction Phase]
         direction TB
         Env[Robosuite Environment]
         State[State Vector]
@@ -100,12 +100,12 @@ graph TD
     end
 
     %% 2. MEMORY (The "Remember" Phase)
-    subgraph Memory_System [ 🧠 Memory Phase ]
-        Buffer[(Replay Buffer<br>Capacity: 1,000,000)]
+    subgraph Memory_System [Memory Phase]
+        Buffer[(Replay Buffer<br>Capacity 1M)]
     end
 
     %% 3. LEARNING (The "Improve" Phase)
-    subgraph Learning_System [ 🎓 Training Phase (TD3) ]
+    subgraph Learning_System [Training Phase - TD3]
         direction TB
         
         %% Critic Section
