@@ -3,7 +3,7 @@
 # 🤖 Autonomous Robotic Arm Control
 ### using Reinforcement Learning (TD3)
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.10.8-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c)
 ![Robosuite](https://img.shields.io/badge/Sim-Robosuite-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
@@ -52,6 +52,7 @@ The agent was trained for **8,500+ episodes**. It demonstrates a clear "S-curve"
     ```
 
 2.  **Setup Environment** (Recommended):
+    *Requires Python 3.10.8*
     ```bash
     python -m venv venv
     venv\Scripts\activate  # Windows
