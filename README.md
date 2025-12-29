@@ -90,29 +90,35 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    %% Entities
-    Env[Robosuite Environment]
-    Buffer[Replay Buffer]
-    Actor[Actor Network]
-    Critic[Twin Critics]
-    Target[Target Networks]
+    %% NODES
+    Env[Robosuite Simulation]
+    Buffer[(Replay Buffer)]
 
-    %% Interaction Loop
+    subgraph TD3_Agent [TD3 Agent Architecture]
+        direction TB
+        Actor[Actor Network - Policy]
+        Critic[Twin Critics - Value]
+        Target[Target Networks]
+    end
+
+    %% FLOWS
+    
+    %% Interaction
     Env -->|State| Actor
-    Actor -->|Action + Noise| Env
-    Env -->|Next State, Reward, Done| Buffer
+    Actor -->|Action| Env
+    Env -->|Experience Tuple| Buffer
 
-    %% Training Loop
-    Buffer -->|Sample Batch| Actor
+    %% Training
     Buffer -->|Sample Batch| Critic
+    Buffer -->|Sample Batch| Actor
+
+    %% Optimization
+    Actor -->|Deterministic Action| Critic
+    Critic -->|Q-Value Output| Actor
     
-    %% Updates
-    Actor -->|Policy Actions| Critic
-    Critic -->|Q-Values| Actor
-    
-    %% Target Sync
-    Actor -.->|Soft Update| Target
-    Critic -.->|Soft Update| Target
+    %% Stability
+    Actor -.->|Polyak Averaging| Target
+    Critic -.->|Polyak Averaging| Target
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
