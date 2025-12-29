@@ -90,47 +90,63 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    subgraph Environment [Robosuite / MuJoCo]
-        State[State / Observation]
-        Reward[Reward]
-        Done[Done Flag]
+    %% Define Styles
+    classDef storage fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef process fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef network fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+    classDef environment fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+
+    subgraph Simulation [Environment Loop]
+        direction TB
+        Env((Robosuite<br>Environment)):::environment
+        State[Observation]:::process
+        Reward(Reward):::process
+        Done{Done?}:::process
     end
 
-    subgraph Agent [TD3 Agent]
-        ReplayBuffer[(Replay Buffer)]
+    subgraph Training [TD3 Learning Process]
+        direction TB
+        Buffer[("Replay Buffer<br>(1,000,000 capacity)")]:::storage
         
-        subgraph Neural_Networks [Neural Networks]
-            Actor(Actor Network)
-            Critic1(Critic 1)
-            Critic2(Critic 2)
+        subgraph Critics [Critic Update]
+            Batch(Sample Mini-Batch):::process
+            Critic1[Critic 1 Network]:::network
+            Critic2[Critic 2 Network]:::network
+            TargetC1[Target Critic 1]:::network
+            TargetC2[Target Critic 2]:::network
+            LossC(Minimize  MSE Loss):::process
         end
-        
-        subgraph Targets [Target Networks (Polyak Avg)]
-            TargetActor(Target Actor)
-            TargetCritic1(Target Critic 1)
-            TargetCritic2(Target Critic 2)
+
+        subgraph Actors [Actor Update (Delayed)]
+            Actor[Actor Network]:::network
+            TargetActor[Target Actor]:::network
+            LossA(Maximize Q-Value):::process
         end
     end
 
-    %% Interaction Flow
-    State -->|Input| Actor
-    Actor -->|Action + Noise| State
-    State -->|Store Transition| ReplayBuffer
-    Reward -->|Store Transition| ReplayBuffer
+    %% Data Flow
+    Env -->|State| Actor
+    Actor -->|Action + Noise| Env
+    Env -->|Next State, Reward, Done| Buffer
     
-    %% Training Flow
-    ReplayBuffer -->|Sample Batch| Critic1
-    ReplayBuffer -->|Sample Batch| Critic2
-    ReplayBuffer -->|Sample Batch| Actor
+    %% Critic Training Flow
+    Buffer -->|Batch| Batch
+    Batch --> Critic1 & Critic2
+    Batch --> TargetC1 & TargetC2 & TargetActor
+    TargetActor -->|Target Action| TargetC1 & TargetC2
+    TargetC1 & TargetC2 -->|Min Q-Value| LossC
+    LossC -->|Backprop| Critic1 & Critic2
+
+    %% Actor Training Flow
+    Batch --> Actor
+    Actor -->|Predicted Action| Critic1
+    Critic1 -->|Q-Value| LossA
+    LossA -->|Backprop| Actor
     
-    %% Network Updates
-    Action_Out[Action] --> Critic1
-    Action_Out --> Critic2
-    
-    %% Sync
-    Actor -.->|Soft Update| TargetActor
-    Critic1 -.->|Soft Update| TargetCritic1
-    Critic2 -.->|Soft Update| TargetCritic2
+    %% Target Updates
+    Actor -.->|Polyak Avg| TargetActor
+    Critic1 -.->|Polyak Avg| TargetC1
+    Critic2 -.->|Polyak Avg| TargetC2
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
