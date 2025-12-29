@@ -90,74 +90,29 @@ The solution uses an **Actor-Critic** architecture with **Twin Delayed** stabili
 
 ```mermaid
 graph TD
-    %% Visual Styling
-    classDef storage fill:#DAE8FC,stroke:#6C8EBF,stroke-width:2px;
-    classDef process fill:#D5E8D4,stroke:#82B366,stroke-width:2px;
-    classDef model   fill:#FFE6CC,stroke:#D79B00,stroke-width:2px;
-    classDef param   fill:#F5F5F5,stroke:#666666,stroke-width:1px,stroke-dasharray: 5 5;
+    %% Entities
+    Env[Robosuite Environment]
+    Buffer[Replay Buffer]
+    Actor[Actor Network]
+    Critic[Twin Critics]
+    Target[Target Networks]
 
-    %% --- ENVIRONMENT ---
-    subgraph ENV_LAYER [Simulation Layer - Robosuite]
-        direction TB
-        Obs(State Vector):::param
-        Reward(Reward Signal):::param
-        Done(Termination Flag):::param
-        Physics[MuJoCo Physics Engine]:::process
-    end
+    %% Interaction Loop
+    Env -->|State| Actor
+    Actor -->|Action + Noise| Env
+    Env -->|Next State, Reward, Done| Buffer
 
-    %% --- MEMORY ---
-    subgraph DATA_LAYER [Data Layer]
-        ReplayBuffer[("Experience Replay<br>Capacity 1M Transitions")]:::storage
-    end
-
-    %% --- AGENT ---
-    subgraph AGENT_LAYER [TD3 Agent Architecture]
-        direction TB
-        
-        subgraph ACTOR_BLOCK [Policy - Actor]
-            Actor(Actor Network):::model
-            Action[Continuous Action]:::process
-            Noise(Exploration Noise):::param
-        end
-
-        subgraph CRITIC_BLOCK [Value Estimation - Twin Critics]
-            Critic1(Critic 1):::model
-            Critic2(Critic 2):::model
-            MinQ[Min Q-Value]:::process
-        end
-        
-        subgraph UPDATE_BLOCK [Optimization Logic]
-            Bellman[Minimize Bellman Error]:::process
-            PolicyGrad[Deterministic Policy Gradient]:::process
-            SoftUpdate[Polyak Averaging]:::process
-        end
-    end
-
-    %% --- CONNECTIONS ---
+    %% Training Loop
+    Buffer -->|Sample Batch| Actor
+    Buffer -->|Sample Batch| Critic
     
-    %% Interaction Information Flow
-    Physics --> Obs & Reward & Done
-    Obs --> Actor
-    Actor --> Action
-    Noise --> Action
-    Action -->|Execute Control| Physics
+    %% Updates
+    Actor -->|Policy Actions| Critic
+    Critic -->|Q-Values| Actor
     
-    %% Data Storage Flow
-    Obs & Action & Reward & Done -->|Store Tuple| ReplayBuffer
-    
-    %% Training Data Flow
-    ReplayBuffer -->|Sample Batch 256| Bellman
-    
-    %% Critic Updates
-    Bellman -->|Backprop| Critic1 & Critic2
-    Actor -.->|Next Action| Bellman
-    
-    %% Actor Updates (Delayed)
-    Critic1 -->|Q-Value Estimate| PolicyGrad
-    PolicyGrad -->|Backprop Delayed| Actor
-    
-    %% Target Networks
-    Actor & Critic1 & Critic2 -.->|Weight Transfer| SoftUpdate
+    %% Target Sync
+    Actor -.->|Soft Update| Target
+    Critic -.->|Soft Update| Target
 ```
 
 *   **Actor:** Maps states to continuous actions (Joint Velocities).
